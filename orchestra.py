@@ -17,8 +17,8 @@ HOURGLASS = "C:\Program` Files` `(x86`)\Hourglass\Hourglass.exe"
 DAY_HOUR_START = 9
 DAY_HOUR_END = 21
 
-FILE_SET_ALARMS = 'set_alarms'
-FILE_LOG = 'orchestra_log'
+FILE_SET_ALARMS = 'logs\set_alarms'
+FILE_LOG = 'logs\orchestra_log'
 
 # ==================================================================================================
 # ~LOGGING~
