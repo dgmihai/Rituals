@@ -1,0 +1,59 @@
+{
+  "type": "object",
+  "properties": {
+    "full_sync": {
+      "type": "boolean"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    "projects": {
+      "type": "array",
+      "items": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      }
+    },
+    "sync_token": {
+      "type": "string"
+    },
+    "temp_id_mapping": {
+      "type": "object"
+    }
+  },
+  "required": [
+    "items",
+    "projects",
+    "sections",
+    "sync_token"
+  ]
+}
