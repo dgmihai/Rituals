@@ -48,7 +48,7 @@ args = parser.parse_args()
 if args.TEST:
     c.TEST = True
     c.FILE_TODOIST = 'data/todoist_test'
-if arg.ForceSync:
+if args.ForceSync:
     c.FORCE_SYNC = True
 if args.Alarm:
     alarm.sync()

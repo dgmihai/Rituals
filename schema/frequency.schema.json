@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "frequency.schema.json",
+  "title": "Frequency",
+  "description": "The frequency of a task",
+  "type": "object",
+  "required": [ "interval" ],
+  "properties": {
+    "interval": {
+        "description": "The length of time to count by",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["once", "sec", "min", "hour", "day", "week"]
+          }
+        }
+      }
+    },
+    "span": {
+        "description": "The amount of intervals between each reminder on",
+        "type": "integer"
+    },
+    "count": {
+        "description": "The number of spans to wait on",
+        "type": "integer"
+    }
+  }
+}

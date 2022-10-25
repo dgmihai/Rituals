@@ -1,26 +1,29 @@
+from collections import OrderedDict
 import json
 from json import JSONDecodeError
 from jsonschema import validate
 import requests
 from requests.structures import CaseInsensitiveDict
 
-from jsonmerge import Merger
 import logging
 
 import config as c
+import util
 
-checklists = []
-todoist = ""
+todoist = {}
 
 def _read():
     """Reads Todoist data from local file
     """
-    with open(c.FILE_TODOIST) as f:
+    if not c.FORCE_SYNC:
         try:
-            logging.debug("Reading from " + c.FILE_TODOIST)
-            _set(json.load(f), r=True)
+            with open(c.FILE_TODOIST) as f:
+                logging.debug("Reading from " + c.FILE_TODOIST)
+                _set(json.load(f), r=True)
         except (JSONDecodeError):
-            logging.debug('Todoist local data empty')
+            logging.warn("Todoist local data empty")
+        except (FileNotFoundError):
+            logging.warn("Todoist local data not present")
 
 def _set(data, r=False):
     """Overwrites Todoist data locally and writes to file
@@ -90,6 +93,10 @@ def _merged_json(base, head):
     validate(instance=head, schema=schema)
     logging.debug("Merging...")
     for table in ["items", "sections", "projects"]:
+        if table == "items":
+            name = "content"
+        else:
+            name = "name"
         for base_item in reversed(base[table]):
             for head_item in reversed(head[table]):
                 if base_item["id"] == head_item["id"]:
@@ -97,28 +104,177 @@ def _merged_json(base, head):
                     base[table].remove(base_item)
                     if head_item["is_deleted"]:
                         logging.debug(
-                            "Deleting from " + table + ": " + base_item["content"])
+                            "Deleting from " + table + ": " + base_item[name])
                     else:
                         logging.debug(
-                            "Overwritting in " + table + ": " + head_item["content"])
+                            "Overwritting in " + table + ": " + head_item[name])
                         base[table].append(head_item)
                     break
             if len(head[table]) == 0:
                 break
         for head_item in head[table]:
-            logging.debug("Adding to " + table + ": " + head_item["content"])
+            logging.debug("Adding to " + table + ": " + head_item[name])
             base[table].append(head_item)
-    if not c.TEST:
-        # Don't update the sync token if we are testing
-        base['sync_token'] = head['sync_token']
+    base['sync_token'] = head['sync_token']
     return base
 
-def _get_checklists():
-    # Set active tracked checklists
-    f = open(c.FILE_CHECKLISTS, "r")
-    for line in f:
-        checklists.append(line)
-    f.close()
+def extract_act(task):
+    """Extract and parse an act from a todoist task
+    
+    We check the description for the following terms:
+    WHEN: See act.schema.json
+    TIME: See act.schema.json
+    REMIND: See act.schema.json
+    FREQ: See act.schema.json
+    
+    Args:
+    task -- Dict of Todoist task
+    
+    Returns:
+    JSON Object of act"""
+    ret = {}
+    # Step
+    name = ""
+    task_description = ""
+    if 'name' in task:
+        # In Todoist, only sections and projects have 'name' fields
+        ret['ritual'] = True
+        name = task['name']
+    elif 'content' in task:
+        # In Todoist, only tasks have 'content' fields
+        name = task['content']
+        task_description = task['description']
+        # Next
+        next_prefix = "RITUAL: "
+        next_prefix_index = name.find(next_prefix)
+        if next_prefix_index != -1:
+            next_index = next_prefix_index + len(next_prefix)
+            next_end = len(name)
+            ret['ritual'] = True
+            ret['next'] = name[next_index:next_end]
+            # name = name.replace(name[next_prefix_index:next_end], "")
+        else:
+            # When
+            when_prefix = "WHEN: "
+            when_prefix_index = task_description.find(when_prefix)
+            if when_prefix_index != -1:
+                when_index = when_prefix_index + len(when_prefix)
+                when_end = task_description.find("\n", when_index)
+                if when_end == -1:
+                    when_end = len(task_description)
+                ret['when'] = util.to_seconds(task_description[when_index:when_end])
+                task_description = task_description.replace(task_description[when_prefix_index:when_end], "")
+            # Duration
+            duration_prefix = "TIME: "
+            duration_prefix_index = task_description.find(duration_prefix)
+            if duration_prefix_index != -1:
+                duration_index = duration_prefix_index + len(duration_prefix)
+                duration_end = task_description.find("\n", duration_index)
+                if duration_end == -1:
+                    duration_end = len(task_description)
+                ret['duration'] = util.to_seconds(task_description[duration_index:duration_end])
+                task_description = task_description.replace(task_description[duration_prefix_index:duration_end], "")
+            # Reminder
+            reminder_prefix = "REMIND: "
+            reminder_prefix_index = task_description.find(reminder_prefix)
+            if reminder_prefix_index != -1:
+                reminder_index = reminder_prefix_index + len(reminder_prefix)
+                reminder_end = task_description.find("\n", reminder_index)
+                if reminder_index == -1:
+                    reminder_index = len(task_description)
+                ret['reminder'] = util.to_seconds(task_description[reminder_index:reminder_end])
+                task_description = task_description.replace(task_description[reminder_prefix_index:reminder_end], "")
+            # Frequency
+            frequency_prefix = "FREQ: "
+            frequency_prefix_index = task_description.find(frequency_prefix) # NOT YET IMPLEMENTED
+            if frequency_prefix_index != -1:
+                frequency_index = frequency_prefix_index + len(frequency_prefix)
+                frequency_end = task_description.find("\n", frequency_index)
+                if frequency_end == -1:
+                    frequency_end = len(task_description)
+                # PARSE FREQ
+                task_description = task_description.replace(task_description[frequency_prefix_index:frequency_end], "")
+    ret['id'] = task['id']
+    ret['name'] = name
+    if task_description is not "":
+        ret['description'] = task_description
+    return ret
+    
+def extract_rituals():
+    """Get the rituals from local data
+    Write it to a local file as well
+    We are only checking the RITUALS project
+    
+    If an item matches a ritual name, it is the config for that ritual with defaults
+    
+    Sets full list of all ritual acts sorted by name as in rituals.schema.json
+    """
+
+    rituals = {}
+    items = todoist['items']
+    for project in todoist['projects']:
+        if project['name'] == "RITUALS":
+            # Populate list of rituals
+            for section in todoist['sections']:
+                if section['project_id'] == project['id']:
+                    # List of sections inside "RITUALS"
+                    logging.debug("Extracting ritual: " + section['name'])
+                    rituals[section['id']] = extract_act(section)
+                    rituals[section['id']]['max_order'] = 0
+                    rituals[section['id']]['min_order'] = 0
+            # Populate rituals with acts
+            for item in items:
+                for ritual_id in rituals.keys():
+                    if item['section_id'] == ritual_id:
+                        # List of items that are in a "RITUALS" section
+                        if item['content'] == "INFO":
+                            logging.debug("Found INFO for " + rituals[ritual_id]['name'])
+                            data = extract_act(item)
+                            data['id'] = ritual['id']
+                            data['name'] = ritual['name']
+                            ritual = data
+                        else:
+                            if not 'children_dict' in rituals[ritual_id]:
+                                rituals[ritual_id]['children_dict'] = {}
+                            order = int(item['child_order'])
+                            if order < rituals[ritual_id]['min_order']:
+                                rituals[ritual_id]['min_order'] = order
+                            if order > rituals[ritual_id]['max_order']:
+                                rituals[ritual_id]['max_order'] = order
+                            logging.debug("Adding to ritual " + rituals[ritual_id]['name'] + ": " + item['content'])
+                            rituals[ritual_id]['children_dict'][order] = extract_act(item)
+            # Set defaults and link Next's, and sort, and validate
+            logging.debug("ORGANIZING RITUALS")
+            with open(c.FILE_ACT_SCHEMA) as f:
+                schema = json.load(f)
+            for ritual in rituals.values():
+                ritual['children'] = []
+                for x in range(ritual['min_order'], ritual['max_order']+1):
+                    if x in ritual['children_dict']:
+                        act = ritual['children_dict'][x]
+                        logging.debug("Act: " + str(act['name']))
+                        if 'ritual' not in act:
+                            if 'duration' in ritual:
+                                if 'duration' not in act:
+                                    act['duration'] = ritual['duration']
+                            if 'reminder' in ritual:
+                                if 'reminder' not in act:
+                                    act['reminder'] = ritual['reminder']
+                            if 'frequency' in ritual:
+                                if 'frequency' not in act:
+                                    act['frequency'] = ritual['frequency']
+                        elif 'next' in act:
+                            for y in rituals.values():
+                                if act['next'] == y['name']:
+                                    act['next'] = y['id']
+                        ritual['children'].append(act)
+                        validate(instance=act, schema=schema)
+                del ritual['children_dict']
+                del ritual['min_order']
+                del ritual['max_order']
+                    
+    with open(c.FILE_RITUALS, 'w') as f:
+        f.write(json.dumps(rituals))
 
 def sync():
     """JSON merge Todoist data
@@ -139,3 +295,4 @@ def sync():
         logging.debug('Starting incremental Todoist sync: ' + todoist['sync_token'])
         r = _request(todoist['sync_token'])
         _set(_merged_json(todoist, r.json()))
+    extract_rituals()

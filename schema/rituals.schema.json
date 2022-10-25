@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rituals.schema.json",
+  "title": "Rituals",
+  "description": "The top-level list of rituals",
+  "type": "array",
+    "items": {
+      "$ref": "act.schema.json"
+    },
+  }
+}

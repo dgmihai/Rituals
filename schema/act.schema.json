@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "act.schema.json",
+  "title": "Act",
+  "description": "A thing or set of things to do",
+  "type": "object",
+  "required": [ "id", "name" ],
+  "properties": {
+    "id": {
+        "description": "The id of the act",
+        "type": "string"
+    },
+    "name": {
+        "description": "The name of the act",
+        "type": "string"
+    },
+    "description": {
+        "description": "Any extra information about the act",
+        "type": "string"
+    },
+    "when": {
+        "description": "The time of day the act is expected to take place",
+        "type": "string"
+    },
+    "duration": {
+        "description": "An expected duration for the act; also is the default expected duration for subordinate acts",
+        "type": "integer"
+    },
+    "reminder": {
+        "description": "An expected reminder interval for the act; also is the default reminder interval for subordinate acts",
+        "type": "integer"
+    },
+    "frequency": {
+      "$ref": "frequency.schema.json"
+    },
+    "children": {
+      "description": "Ordered list of subordinate acts",
+      "type": "array",
+      "items": {
+          "ref": "#"
+      }
+    },
+    "next": {
+        "description": "The id of the act to take place immediately following this act before returning to normal order",
+        "type": "string"
+    },
+    "ritual": {
+        "description": "If this is an actionable step  to be shown to the user or  a ritual",
+        "type": "boolean"
+    }
+  }
+}

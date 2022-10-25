@@ -13,6 +13,8 @@ import config as c
 # ~SETTING & TRACKING HOURGLASS ALARMS~
 # ==================================================================================================
 
+set_alarms = []
+
 def apftime(d):
     return datetime.strftime(d, '%I:%M %p')
 
@@ -23,12 +25,12 @@ def cmptftime(d):
     return datetime.strftime(d, '%m/%d/%y %I:%M %p')
 
 def _read():
+    global set_alarms
     with open(c.FILE_SET_ALARMS) as f:
         try:
             set_alarms = json.load(f)
         except:
             set_alarms = ["X"]
-    logging.debug(set_alarms)
 
 def _run(cmd):
     completed = subprocess.run(["powershell", "-Command", cmd], capture_output=True, text=True)
@@ -36,9 +38,9 @@ def _run(cmd):
 
 def _set_hourglass_alarm(arg, d):
     t = apftime(d)
-    cmd = arg + " " + get_alarm_title() + " " + t
+    cmd = arg + " " + _get_alarm_title() + " " + t
     try:
-        ret = run(c.PATH_HOURGLASS + cmd)
+        ret = _run(c.PATH_HOURGLASS + cmd)
         if ret.returncode != 0:
             logging.error("Failed to set Hourglass alarm: %s", ret.stderr)
         else:
@@ -68,21 +70,24 @@ def _was_set_alarm(d):
     return False
 
 def _save_set_alarms():
-    f = open(FILE_SET_ALARMS, "w")
+    f = open(c.FILE_SET_ALARMS, "w")
     json.dump(set_alarms, f)
     f.close()
 
 def sync():
+    _read()
     d = datetime.now()
     start_hour = max(c.DAY_HOUR_START, d.hour)
     end_hour = c.DAY_HOUR_END+1
     if end_hour < start_hour:
         logging.warn("End hour " + end_hour + "is earlier than start hour " + start_hour)
-    clean_set_alarms(d)
+        
+    logging.debug(set_alarms)
+    _clean_set_alarms(d)
     for hour in range(start_hour+1, c.DAY_HOUR_END+1):
         d = d.replace(hour=hour, minute=0, second=0, microsecond=0)
-        if not was_set_alarm(d):
-            set_hourglass_alarm(""
+        if not _was_set_alarm(d):
+            _set_hourglass_alarm(""
                 + " --sound \"Normal beep\""
                 + " --prompt-on-exit off"
                 + " --always-on-top on"
@@ -90,7 +95,7 @@ def sync():
                 d)
         else:
             logging.debug("Alarm at " + apftime(d) + " already set.")
-        save_set_alarms()
+        _save_set_alarms()
         #
         #sched.add_job(job, 'cron', hour=9,
         #              end_time=17
