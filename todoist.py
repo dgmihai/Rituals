@@ -120,16 +120,16 @@ def _merged_json(base, head):
 
 def extract_act(task):
     """Extract and parse an act from a todoist task
-    
+
     We check the description for the following terms:
     WHEN: See act.schema.json
-    TIME: See act.schema.json
-    REMIND: See act.schema.json
-    FREQ: See act.schema.json
-    
+    HOW LONG: See act.schema.json
+    REMINDER: See act.schema.json
+    FREQUENCY: See act.schema.json
+
     Args:
     task -- Dict of Todoist task
-    
+
     Returns:
     JSON Object of act"""
     ret = {}
@@ -165,17 +165,17 @@ def extract_act(task):
                 ret['when'] = util.to_seconds(task_description[when_index:when_end])
                 task_description = task_description.replace(task_description[when_prefix_index:when_end], "")
             # Duration
-            duration_prefix = "TIME: "
+            duration_prefix = "HOW LONG: "
             duration_prefix_index = task_description.find(duration_prefix)
             if duration_prefix_index != -1:
                 duration_index = duration_prefix_index + len(duration_prefix)
                 duration_end = task_description.find("\n", duration_index)
                 if duration_end == -1:
                     duration_end = len(task_description)
-                ret['duration'] = util.to_seconds(task_description[duration_index:duration_end])
+                ret['time'] = {'expected': util.to_seconds(task_description[duration_index:duration_end])}
                 task_description = task_description.replace(task_description[duration_prefix_index:duration_end], "")
             # Reminder
-            reminder_prefix = "REMIND: "
+            reminder_prefix = "REMINDER: "
             reminder_prefix_index = task_description.find(reminder_prefix)
             if reminder_prefix_index != -1:
                 reminder_index = reminder_prefix_index + len(reminder_prefix)
@@ -185,7 +185,7 @@ def extract_act(task):
                 ret['reminder'] = util.to_seconds(task_description[reminder_index:reminder_end])
                 task_description = task_description.replace(task_description[reminder_prefix_index:reminder_end], "")
             # Frequency
-            frequency_prefix = "FREQ: "
+            frequency_prefix = "FREQUENCY: "
             frequency_prefix_index = task_description.find(frequency_prefix) # NOT YET IMPLEMENTED
             if frequency_prefix_index != -1:
                 frequency_index = frequency_prefix_index + len(frequency_prefix)
@@ -199,18 +199,18 @@ def extract_act(task):
     if task_description is not "":
         ret['description'] = task_description
     return ret
-    
+
 def extract_rituals():
     """Get the rituals from local data
     Write it to a local file as well
     We are only checking the RITUALS project
-    
+
     If an item matches a ritual name, it is the config for that ritual with defaults
-    
+
     Sets full list of all ritual acts sorted by name as in rituals.schema.json
     """
 
-    rituals = {}
+    rituals = {};
     items = todoist['items']
     for project in todoist['projects']:
         if project['name'] == "RITUALS":
@@ -234,29 +234,30 @@ def extract_rituals():
                             data['name'] = ritual['name']
                             ritual = data
                         else:
-                            if not 'children_dict' in rituals[ritual_id]:
-                                rituals[ritual_id]['children_dict'] = {}
+                            if not 'acts_dict' in rituals[ritual_id]:
+                                rituals[ritual_id]['acts_dict'] = {}
                             order = int(item['child_order'])
                             if order < rituals[ritual_id]['min_order']:
                                 rituals[ritual_id]['min_order'] = order
                             if order > rituals[ritual_id]['max_order']:
                                 rituals[ritual_id]['max_order'] = order
                             logging.debug("Adding to ritual " + rituals[ritual_id]['name'] + ": " + item['content'])
-                            rituals[ritual_id]['children_dict'][order] = extract_act(item)
+                            rituals[ritual_id]['acts_dict'][order] = extract_act(item)
             # Set defaults and link Next's, and sort, and validate
-            logging.debug("ORGANIZING RITUALS")
-            with open(c.FILE_ACT_SCHEMA) as f:
-                schema = json.load(f)
+            logging.debug("ORGANIZING RITUALS") 
+            with open(c.FILE_RITUALS_SCHEMA) as f:
+                schema = json.load(f)               
             for ritual in rituals.values():
-                ritual['children'] = []
+                ritual['acts'] = []
                 for x in range(ritual['min_order'], ritual['max_order']+1):
-                    if x in ritual['children_dict']:
-                        act = ritual['children_dict'][x]
+                    if x in ritual['acts_dict']:
+                        act = ritual['acts_dict'][x]
                         logging.debug("Act: " + str(act['name']))
                         if 'ritual' not in act:
-                            if 'duration' in ritual:
-                                if 'duration' not in act:
-                                    act['duration'] = ritual['duration']
+                            if 'time' in ritual:
+                                if 'expected' in ritual['time']:
+                                    if 'expected' not in act['time'] or 'time' not in act:
+                                        act['time']['expected'] = ritual['time']['expected']
                             if 'reminder' in ritual:
                                 if 'reminder' not in act:
                                     act['reminder'] = ritual['reminder']
@@ -267,12 +268,11 @@ def extract_rituals():
                             for y in rituals.values():
                                 if act['next'] == y['name']:
                                     act['next'] = y['id']
-                        ritual['children'].append(act)
-                        validate(instance=act, schema=schema)
-                del ritual['children_dict']
+                        ritual['acts'].append(act)
+                del ritual['acts_dict']
                 del ritual['min_order']
                 del ritual['max_order']
-                    
+                validate(instance=ritual, schema=schema)
     with open(c.FILE_RITUALS, 'w') as f:
         f.write(json.dumps(rituals))
 

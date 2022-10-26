@@ -24,9 +24,7 @@ FILE_RITUALS = 'data/rituals.json'
 FILE_TODOIST = 'data/todoist.json'
 FILE_TODOIST_SCHEMA = 'schema/todoist_schema.json'
 
-FILE_ACT_SCHEMA = 'schema/act.schema.json'
-FILE_FREQUENCY_SCHEMA = 'schema/act.frequency.json'
-FILE_RITUALS_SCHEMA = 'schema/act.rituals.json'
+FILE_RITUALS_SCHEMA = 'schema/rituals.schema.json'
 
 DELIM = "/"
 

@@ -13,6 +13,9 @@ def to_seconds(time):
     try:
         t = datetime.strptime(time, "%H:%M:%S")
     except ValueError:
-        t = datetime.strptime(time, "%M:%S")
+        try:
+            t = datetime.strptime(time, "%M:%S")
+        except ValueError:
+            return t
     td = timedelta(hours=t.hour, minutes=t.minute, seconds=t.second)
     return td.total_seconds()

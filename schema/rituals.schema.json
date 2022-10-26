@@ -3,9 +3,114 @@
   "$id": "rituals.schema.json",
   "title": "Rituals",
   "description": "The top-level list of rituals",
-  "type": "array",
-    "items": {
-      "$ref": "act.schema.json"
+  "type": "object",
+  "items": {
+    "$ref": "#definitions/act"
+  },
+  "definitions": {
+    "act": {
+      "title": "Act",
+      "description": "A thing or set of things to do",
+      "type": "object",
+      "required": [ "id", "name" ],
+      "properties": {
+        "id": {
+            "description": "The id of the act",
+            "type": "string"
+        },
+        "status": {
+            "description": "The status of this particular act (only one act active at a time; undefined means not started",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "enum": ["active", "completed", "incomplete"]
+        },
+        "name": {
+            "description": "The name of the act",
+            "type": "string"
+        },
+        "description": {
+            "description": "Any extra information about the act",
+            "type": "string"
+        },
+        "when": {
+            "description": "The time of day the act is expected to take place",
+            "type": "string"
+        },
+        "time": {
+            "description": "An expected duration for the act; also is the default expected duration for subordinate acts",
+            "type": "object",
+            "properties": {
+                "expected": {
+                    "description": "The expected duration for the act",
+                    "type": "integer"
+                },
+                "default": {
+                    "description": "The default expected duration for all child acts in seconds",
+                    "type": "integer"
+                },
+                "actual": {
+                    "description": "The time elapsed while the act was in progress in seconds",
+                    "type": "integer"
+                },
+                "started": {
+                    "description": "The date and time the task was started (timestamp)",
+                    "type": "integer"
+                },
+                "paused": {
+                    "description": "How long the act has been paused in seconds",
+                    "type": "integer"
+                }
+            }
+        },
+        "reminder": {
+            "description": "An expected reminder interval for the act; also is the default reminder interval for subordinate acts",
+            "type": "integer"
+        },
+        "frequency": {
+          "$ref": "frequency.schema.json"
+        },
+        "acts": {
+          "description": "Ordered list of subordinate acts",
+          "type": "array",
+          "items": {
+              "ref": "#"
+          }
+        },
+        "next": {
+            "description": "The id of the ritual to take place immediately following this act before returning to normal order",
+            "type": "string"
+        },
+        "ritual": {
+            "description": "If this is an actionable step to be shown to the user or a ritual",
+            "type": "boolean"
+        }
+      }
+    }
+  },
+  "frequency": {
+    "title": "Frequency",
+    "description": "The frequency of a task",
+    "type": "object",
+    "required": [ "interval" ],
+    "properties": {
+      "interval": {
+        "description": "The length of time to count by",
+        "type": "array",
+        "items": {
+          "type": "string",
+          "enum": ["once", "sec", "min", "hour", "day", "week"]
+        }
+      }
     },
+    "span": {
+        "description": "The amount of intervals between each reminder on",
+        "type": "integer"
+    },
+    "count": {
+        "description": "The number of spans to wait on",
+        "type": "integer"
+    }
   }
 }
