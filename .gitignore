@@ -1,7 +1,5 @@
-orchestra_log
-set_alarms
-orchestra_stdout
 logs/
 data/
 other/
+wip/
 __pycache__/

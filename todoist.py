@@ -244,9 +244,9 @@ def extract_rituals():
                             logging.debug("Adding to ritual " + rituals[ritual_id]['name'] + ": " + item['content'])
                             rituals[ritual_id]['acts_dict'][order] = extract_act(item)
             # Set defaults and link Next's, and sort, and validate
-            logging.debug("ORGANIZING RITUALS") 
+            logging.debug("ORGANIZING RITUALS")
             with open(c.FILE_RITUALS_SCHEMA) as f:
-                schema = json.load(f)               
+                schema = json.load(f)
             for ritual in rituals.values():
                 ritual['acts'] = []
                 for x in range(ritual['min_order'], ritual['max_order']+1):
