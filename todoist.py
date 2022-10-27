@@ -138,19 +138,19 @@ def extract_act(task):
     task_description = ""
     if 'name' in task:
         # In Todoist, only sections and projects have 'name' fields
-        ret['ritual'] = True
-        name = task['name']
+        ret['ritual'] = "true"
+        name = task['name'].replace("'", "")
     elif 'content' in task:
         # In Todoist, only tasks have 'content' fields
         name = task['content']
-        task_description = task['description']
+        task_description = task['description'].replace("'", "")
         # Next
         next_prefix = "RITUAL: "
         next_prefix_index = name.find(next_prefix)
         if next_prefix_index != -1:
             next_index = next_prefix_index + len(next_prefix)
             next_end = len(name)
-            ret['ritual'] = True
+            ret['ritual'] = "true"
             ret['next'] = name[next_index:next_end]
             # name = name.replace(name[next_prefix_index:next_end], "")
         else:
@@ -196,8 +196,8 @@ def extract_act(task):
                 task_description = task_description.replace(task_description[frequency_prefix_index:frequency_end], "")
     ret['id'] = task['id']
     ret['name'] = name
-    if task_description is not "":
-        ret['description'] = task_description
+    if task_description != "":
+        ret['description'] = task_description.strip()
     return ret
 
 def extract_rituals():
@@ -209,7 +209,6 @@ def extract_rituals():
 
     Sets full list of all ritual acts sorted by name as in rituals.schema.json
     """
-
     rituals = {};
     items = todoist['items']
     for project in todoist['projects']:
@@ -272,7 +271,7 @@ def extract_rituals():
                 del ritual['acts_dict']
                 del ritual['min_order']
                 del ritual['max_order']
-                validate(instance=ritual, schema=schema)
+    validate(instance=rituals, schema=schema)
     with open(c.FILE_RITUALS, 'w') as f:
         f.write(json.dumps(rituals))
 
