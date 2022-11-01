@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rituals.schema.json",
+  "title": "Rituals",
+  "description": "The top-level list of rituals",
+  "type": "object",
+  "items": {
+    "$ref": "#definitions/category"
+  },
+  "definitions": {
+    "acts": {
+      "description": "Ordered list of subordinate acts",
+      "type": "object",
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "items": {
+          "type": "array",
+          "additionalProperties": false,
+          "items": {
+            "anyOf": [
+              {
+                "ref": "#definitions/ritual"
+              },
+              {
+                "ref": "#definitions/act"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "category": {
+      "title": "Category",
+      "description": "An ordered collection of rituals in their respective categories",
+      "type": "object",
+      "required": [
+        "name",
+        "id",
+        "acts"
+      ],
+      "properties": {
+        "name": {
+          "description": "The name of the category",
+          "type": "string"
+        },
+        "id": {
+          "description": "The id of the category, matching with a section from Todoist",
+          "type": "string"
+        },
+        "acts": {
+          "ref": "#definitions/acts"
+        }
+      }
+    },
+    "ritual": {
+      "title": "Ritual",
+      "description": "An ordered collegtion of acts or subordinate rituals to do",
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "ritual"
+      ],
+      "properties": {
+        "name": {
+          "description": "The name of the ritual",
+          "type": "string"
+        },
+        "id": {
+          "description": "The id of the ritual, matching with a task from Todoist",
+          "type": "string"
+        },
+        "description": {
+          "description": "Any extra information about the ritual",
+          "type": "string"
+        },
+        "triggers": {
+          "description": "TODO: The circumstances under which this ritual is expected to take place",
+          "type": "object",
+          "properties": {
+            "time": {
+              "description": "The time of day the ritual is expected to take place as a human-readable string",
+              "type": "string"
+            }
+          }
+        },
+        "acts": {
+          "ref": "#definitions/act"
+        },
+        "time": {
+          "ref": "#definitions/time"
+        },
+        "frequency": {
+          "$ref": "frequency.schema.json"
+        }
+      }
+    },
+    "act": {
+      "title": "Act",
+      "description": "A thing or set of things to do",
+      "type": "object",
+      "required": [
+        "id",
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "description": "The name of the act",
+          "type": "string"
+        },
+        "id": {
+          "description": "The id of the act, matching with a task from Todoist",
+          "type": "string"
+        },
+        "description": {
+          "description": "Any extra information about the ritual",
+          "type": "string"
+        },
+        "time": {
+          "ref": "#definitions/time"
+        },
+        "insertRitual": {
+          "prefix": "RITUAL: ",
+          "description": "The id of the ritual or act to insert at this position, following immediately after this particular act before returning to normal order",
+          "type": "string"
+        },
+        "status": {
+          "description": "The status of this particular act (only one act active at a time; undefined means not started",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "enum": [
+            "active",
+            "completed",
+            "incomplete",
+            "skipped"
+          ]
+        }
+      }
+    },
+    "time": {
+      "title": "Time",
+      "description": "Collection of time-related information about the act or ritual, all in seconds (timestamp in unix time)",
+      "type": "object",
+      "properties": {
+        "started": {
+          "description": "Timestamp of when the ritual or act was started",
+          "type": "integer"
+        },
+        "expected": {
+          "prefix": "HOW LONG: ",
+          "description": "The expected duration of the act; takes priority over all subordinate 'expected' fields",
+          "type": "integer"
+        },
+        "actual": {
+          "description": "ACT-ONLY: The time elapsed while the act was in progress in seconds",
+          "type": "integer"
+        },
+        "paused": {
+          "description": "ACT-ONLY: How long the act has been paused in seconds",
+          "type": "integer"
+        },
+        "reminderActive": {
+          "prefix": "BUZZ: ",
+          "description": "An expected reminder interval for the act before it expires, or if it does not expire; the default if subordinate reminders are not set",
+          "type": "integer"
+        },
+        "reminderExpired": {
+          "prefix": "BUZZ LATE: ",
+          "description": "An expected reminder interval for the act after it expires",
+          "type": "integer"
+        }
+      }
+    },
+    "frequency": {
+      "title": "Frequency",
+      "description": "TODO: The frequency of a task",
+      "type": "object",
+      "required": [
+        "interval"
+      ],
+      "properties": {
+        "interval": {
+          "description": "The length of time to count by",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "once",
+              "sec",
+              "min",
+              "hour",
+              "day",
+              "week"
+            ]
+          }
+        },
+        "span": {
+          "description": "The amount of intervals between each reminder on",
+          "type": "integer"
+        },
+        "count": {
+          "description": "The number of spans to wait on",
+          "type": "integer"
+        }
+      }
+    }
+  }
+}

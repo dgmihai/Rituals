@@ -2,115 +2,288 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "rituals.schema.json",
   "title": "Rituals",
-  "description": "The top-level list of rituals",
+  "description": "A list of rituals sorted by heading coupled with a list of all acts in linked list form",
   "type": "object",
-  "items": {
-    "$ref": "#definitions/act"
-  },
-  "definitions": {
-    "act": {
-      "title": "Act",
-      "description": "A thing or set of things to do",
+  "properties": {
+    "sync": {
+      "title": "sync token",
+      "description": "The Todoist sync token of this version of the Rituals",
+      "type": "string"
+    },
+    "hdgs": {
+      "title": "Headings",
+      "description": "A collection of headings that rituals belong to",
       "type": "object",
-      "required": [ "id", "name" ],
+      "items": {
+        "ref": "#definitions/heading"
+      }
+    },
+    "acts": {
+      "description": "Full list of all acts",
+      "type": "object",
       "properties": {
-        "id": {
-            "description": "The id of the act",
-            "type": "string"
-        },
-        "status": {
-            "description": "The status of this particular act (only one act active at a time; undefined means not started",
-            "type": "array",
-            "items": {
-                "type": "string"
+        "items": {
+          "anyOf": [
+            {
+              "ref": "#definitions/ritual"
             },
-            "enum": ["active", "completed", "incomplete"]
-        },
-        "name": {
-            "description": "The name of the act",
-            "type": "string"
-        },
-        "description": {
-            "description": "Any extra information about the act",
-            "type": "string"
-        },
-        "when": {
-            "description": "The time of day the act is expected to take place",
-            "type": "string"
-        },
-        "time": {
-            "description": "An expected duration for the act; also is the default expected duration for subordinate acts",
-            "type": "object",
-            "properties": {
-                "expected": {
-                    "description": "The expected duration for the act",
-                    "type": "integer"
-                },
-                "default": {
-                    "description": "The default expected duration for all child acts in seconds",
-                    "type": "integer"
-                },
-                "actual": {
-                    "description": "The time elapsed while the act was in progress in seconds",
-                    "type": "integer"
-                },
-                "started": {
-                    "description": "The date and time the task was started (timestamp)",
-                    "type": "integer"
-                },
-                "paused": {
-                    "description": "How long the act has been paused in seconds",
-                    "type": "integer"
-                }
+            {
+              "ref": "#definitions/act"
             }
-        },
-        "reminder": {
-            "description": "An expected reminder interval for the act; also is the default reminder interval for subordinate acts",
-            "type": "integer"
-        },
-        "frequency": {
-          "$ref": "frequency.schema.json"
-        },
-        "acts": {
-          "description": "Ordered list of subordinate acts",
-          "type": "array",
-          "items": {
-              "ref": "#"
-          }
-        },
-        "next": {
-            "description": "The id of the ritual to take place immediately following this act before returning to normal order",
-            "type": "string"
-        },
-        "ritual": {
-            "description": "If this is an actionable step to be shown to the user or a ritual",
-            "type": "boolean"
+          ]
         }
       }
     }
   },
-  "frequency": {
-    "title": "Frequency",
-    "description": "The frequency of a task",
-    "type": "object",
-    "required": [ "interval" ],
-    "properties": {
-      "interval": {
-        "description": "The length of time to count by",
-        "type": "array",
-        "items": {
+  "definitions": {
+    "heading": {
+      "title": "Heading",
+      "description": "An ordered collection of rituals grouped by heading",
+      "type": "object",
+      "required": [
+        "n",
+        "rs"
+      ],
+      "key": {
+        "description": "The id of the heading, matching with a section from Todoist",
+        "type": "string"
+      },
+      "properties": {
+        "n": {
+          "title": "name",
+          "description": "The name of the heading",
+          "type": "string"
+        },
+        "rs": {
+          "title": "rituals",
+          "description": "List of ritual ids in the heading",
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "ritual": {
+      "title": "Ritual",
+      "description": "The beginning of a series of acts",
+      "type": "object",
+      "required": [
+        "n"
+      ],
+      "key": {
+        "description": "The id of the ritual, matching with a task from Todoist",
+        "type": "string"
+      },
+      "properties": {
+        "n": {
+          "title": "name",
+          "description": "The name of the ritual",
+          "type": "string"
+        },
+        "d": {
+          "title": "description",
+          "description": "Any extra information about the ritual",
+          "type": "string"
+        },
+        "py": {
+          "title": "priority",
+          "description": "The priority level of the act",
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "tr": {
+          "title": "triggers",
+          "description": "TODO: The circumstances under which this ritual is expected to take place",
+          "type": "object",
+          "properties": {
+            "ti": {
+              "description": "The time of day the ritual is expected to take place as a human-readable string",
+              "type": "string"
+            }
+          }
+        },
+        "ty": {
+          "title": "type",
+          "description": "Any special types or instructions for the ritual",
           "type": "string",
-          "enum": ["once", "sec", "min", "hour", "day", "week"]
+          "enum": [
+            "hide"
+          ]
+        },
+        "ti": {
+          "title": "time",
+          "ref": "#definitions/time"
+        },
+        "f": {
+          "title": "frequency",
+          "$ref": "frequency.schema.json"
+        },
+        "x": {
+          "title": "next",
+          "description": "The next act in the ritual",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "act": {
+      "title": "Act",
+      "description": "A thing or set of things to do",
+      "type": "object",
+      "required": [
+        "n"
+      ],
+      "key": {
+        "description": "The id of the ritual, matching with a task from Todoist",
+        "type": "string"
+      },
+      "properties": {
+        "n": {
+          "title": "name",
+          "description": "The name of the act",
+          "type": "string"
+        },
+        "d": {
+          "title": "description",
+          "description": "Any extra information about the act",
+          "type": "string"
+        },
+        "pt": {
+          "title": "parent",
+          "description": "The direct parent act or ritual of the act",
+          "type": "string"
+        },
+        "py": {
+          "title": "priority",
+          "description": "The priority level of the act",
+          "type": "integer",
+          "enum": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "ty": {
+          "title": "type",
+          "description": "Any special types or instructions for the ritual",
+          "type": "string",
+          "enum": [
+            "hide"
+          ]
+        },
+        "ti": {
+          "title": "time",
+          "ref": "#definitions/time"
+        },
+        "s": {
+          "title": "status",
+          "description": "The status of this particular act (only one act active at a time; undefined means not started",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "enum": [
+            "active",
+            "completed",
+            "incomplete",
+            "skipped"
+          ]
+        },
+        "x": {
+          "title": "next",
+          "description": "The next act in the series",
+          "type": "string"
+        },
+        "i": {
+          "title": "insert",
+          "prefix": "RITUAL: ",
+          "description": "A ritual or act to insert in place of this act",
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "time": {
+      "title": "Time",
+      "description": "Collection of time-related information about the act or ritual, all in seconds (timestamp in unix time)",
+      "type": "object",
+      "properties": {
+        "s": {
+          "title": "started",
+          "description": "Timestamp of when the ritual or act was started",
+          "type": "integer"
+        },
+        "est": {
+          "title": "estimated",
+          "prefix": "HOW LONG: ",
+          "description": "The expected duration of the act; takes priority over all subordinate 'expected' fields",
+          "type": "integer"
+        },
+        "et": {
+          "title": "actual",
+          "description": "ACT-ONLY: The time elapsed while the act was in progress in seconds",
+          "type": "integer"
+        },
+        "p": {
+          "title": "paused",
+          "description": "ACT-ONLY: How long the act has been paused in seconds",
+          "type": "integer"
+        },
+        "r": {
+          "title": "reminderActive",
+          "prefix": "BUZZ: ",
+          "description": "An expected reminder interval for the act before it expires, or if it does not expire; the default if subordinate reminders are not set",
+          "type": "integer"
+        },
+        "rx": {
+          "title": "reminderExpired",
+          "prefix": "BUZZ LATE: ",
+          "description": "An expected reminder interval for the act after it expires",
+          "type": "integer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "frequency": {
+      "title": "Frequency",
+      "description": "TODO: The frequency of a task",
+      "type": "object",
+      "required": [
+        "interval"
+      ],
+      "properties": {
+        "interval": {
+          "description": "The length of time to count by",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "once",
+              "sec",
+              "min",
+              "hour",
+              "day",
+              "week"
+            ]
+          }
+        },
+        "span": {
+          "description": "The amount of intervals between each reminder on",
+          "type": "integer"
+        },
+        "count": {
+          "description": "The number of spans to wait on",
+          "type": "integer"
         }
       }
-    },
-    "span": {
-        "description": "The amount of intervals between each reminder on",
-        "type": "integer"
-    },
-    "count": {
-        "description": "The number of spans to wait on",
-        "type": "integer"
     }
   }
 }

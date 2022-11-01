@@ -27,5 +27,6 @@ FILE_TODOIST_SCHEMA = 'schema/todoist_schema.json'
 FILE_RITUALS_SCHEMA = 'schema/rituals.schema.json'
 
 DELIM = "/"
+INDENT = None
 
 RITUAL_LABEL = "RITUALS"
