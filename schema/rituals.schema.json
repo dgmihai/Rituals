@@ -185,16 +185,24 @@
         },
         "s": {
           "title": "status",
-          "description": "The status of this particular act (only one act active at a time; undefined means not started",
+          "description": "The status of this particular act (only one act active at a time; undefined means not started"
           "type": "array",
           "items": {
-            "type": "string"
+            "type": "integer"
           },
+          "_enumDescription": [
+            "Is currently active",
+            "Was completed as part of the ritual",
+            "Was left as incomplete",
+            "Was explicitly skipped for some reason",
+            "Was already completed outside of the ritual"
+          ]
           "enum": [
-            "active",
-            "completed",
-            "incomplete",
-            "skipped"
+            1,
+            2,
+            3,
+            4,
+            5
           ]
         },
         "x": {
